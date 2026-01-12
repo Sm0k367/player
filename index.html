@@ -3,24 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEURAL ARCHIVE // AI MASTERY</title>
+    <title>AI MASTERY // THE LIVE SESSIONS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div id="boot-screen">
-        <div class="glitch-container">
-            <h1 data-text="NEURAL_ARCHIVE">NEURAL_ARCHIVE</h1>
-            <p>ESTABLISHING QUANTUM LINK...</p>
+<body class="bg-black text-cyan-400 font-mono overflow-hidden">
+
+    <div id="boot-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#000508]">
+        <div class="mb-8 text-center">
+            <h1 class="text-4xl tracking-[1em] font-black mb-2">LIVE_SESSION</h1>
+            <p class="text-[10px] opacity-50 uppercase tracking-[0.5em]">Buffering DJ Soundbank & Turntable FX...</p>
         </div>
-        <button id="init-btn">INITIALIZE CORE</button>
+        
+        <div id="loader-bar" class="w-64 h-1 border border-cyan-900 mb-10 overflow-hidden">
+            <div id="loader-progress" class="w-0 h-full bg-cyan-400 shadow-[0_0_15px_#00f2ff]"></div>
+        </div>
+
+        <button id="init-btn" class="opacity-0 px-12 py-4 border border-cyan-400 hover:bg-cyan-400 hover:text-black transition-all duration-500 tracking-[1em] uppercase text-xs">
+            DROP THE BEAT
+        </button>
     </div>
 
-    <div id="hud">
-        <div class="top-left">SYSTEM: ACTIVE<br>SIGNAL: 110 BPM</div>
-        <div class="bottom-center">
-            <span id="member-focus">SCANNING...</span>
+    <div id="hud" class="fixed inset-0 pointer-events-none z-50 p-10 flex flex-col justify-between opacity-0">
+        <div class="flex justify-between items-start">
+            <div class="text-[9px] uppercase tracking-[0.5em]">
+                CH_1: DRUM_LOOP [110 BPM]<br>
+                CH_2: SCRATCH_FX [ENABLED]<br>
+                DECK: A_MASTER
+            </div>
+            <div id="vumeter" class="w-32 h-24 flex items-end gap-1">
+                </div>
+        </div>
+
+        <div class="text-center">
+            <div id="active-member" class="text-4xl italic font-bold tracking-tighter text-white mb-2">SEARCHING...</div>
+            <div class="w-full max-w-md mx-auto h-[1px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent shadow-[0_0_10px_#00f2ff]"></div>
+            <p class="text-[8px] mt-4 tracking-[1.5em] opacity-40">MASTERY NETWORK LIVE STREAM</p>
+        </div>
+
+        <div class="flex justify-between items-end">
+            <div class="text-[9px] tracking-[0.2em] opacity-60">
+                L_OUTPUT: 44.1KHZ<br>
+                FX_RACK: DELAY_VERB
+            </div>
+            <div class="text-right">
+                <p class="text-[8px] opacity-50 mb-1">CROSSFADE</p>
+                <div class="w-32 h-1 bg-cyan-900">
+                    <div class="w-1/2 h-full bg-cyan-400"></div>
+                </div>
+            </div>
         </div>
     </div>
 
