@@ -1,86 +1,169 @@
-const members = ["ALISHER FARHADI", "ROSS COHEN", "EPIC TECH", "ADAM NORMANDIN", "LUDOVIC"]; // Add all names here
-let audioCtx, masterGain, compressor;
+// --- AI MASTERY // LIVE VIRTUAL DECK ENGINE ---
 
-// 1. SCENE SETUP
+const members = [
+    "ALISHER FARHADI", "ROSS COHEN", "EPIC TECH", "ADAM NORMANDIN", 
+    "LUDOVIC", "CHUCK BAGGETT", "MIMI BROWN", "MATTHEW LEIGH"
+];
+
+let audioCtx, masterGain, analyzer, kickBuffer, scratchBuffer;
+let isPlaying = false;
+let progress = 0;
+let scratchIntensity = 0;
+
+// 1. THREE.JS ARCHITECTURE
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x000205, 0.005);
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 3000);
+scene.fog = new THREE.FogExp2(0x000508, 0.008);
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 2000);
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('main-canvas'), antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 
-// 2. THE ARCHITECTURE (Generative Tunnel)
+// Create the VU Meter Bars in HUD
+const vuContainer = document.getElementById('vumeter');
+for(let i=0; i<15; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'vu-bar';
+    vuContainer.appendChild(bar);
+}
+
+// 2. THE PATH & TUNNEL (The "Vinyl" Curve)
 const points = [];
-for (let i = 0; i < 100; i++) {
-    points.push(new THREE.Vector3(Math.sin(i * 0.1) * 10, Math.cos(i * 0.1) * 10, i * 150));
+for (let i = 0; i < 50; i++) {
+    points.push(new THREE.Vector3(Math.sin(i * 0.2) * 15, Math.cos(i * 0.1) * 15, i * 120));
 }
 const curve = new THREE.CatmullRomCurve3(points);
-const tubeGeo = new THREE.TubeGeometry(curve, 500, 4, 8, false);
-const tubeMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.2 });
+const tubeGeo = new THREE.TubeGeometry(curve, 400, 5, 12, false);
+const tubeMat = new THREE.MeshStandardMaterial({ 
+    color: 0x00f2ff, 
+    wireframe: true, 
+    emissive: 0x00f2ff,
+    emissiveIntensity: 0.5 
+});
 const tunnel = new THREE.Mesh(tubeGeo, tubeMat);
 scene.add(tunnel);
 
-// 3. REAL-TIME AUDIO ENGINE
-function initAudio() {
+const light = new THREE.PointLight(0xff00ff, 100, 200);
+scene.add(light);
+
+// 3. THE LIVE DJ SOUND ENGINE
+async function setupAudio() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = audioCtx.createGain();
-    compressor = audioCtx.createDynamicsCompressor();
-    masterGain.connect(compressor).connect(audioCtx.destination);
+    analyzer = audioCtx.createAnalyser();
+    analyzer.fftSize = 64;
+    masterGain.connect(analyzer).connect(audioCtx.destination);
+
+    // Load High-Quality Samples (Placeholders - Replace with your own assets in repo)
+    // You can use direct links to .wav or .mp3 files here
+    kickBuffer = await loadSample('https://actions.google.com/sounds/v1/science_fiction/glitch_low_hit.ogg'); 
+    scratchBuffer = await loadSample('https://actions.google.com/sounds/v1/impacts/crash_with_echo.ogg');
     
-    // Constant Bass Thrum
-    const lfo = audioCtx.createOscillator();
-    const lfoGain = audioCtx.createGain();
-    lfo.type = 'sine'; lfo.frequency.value = 0.5;
-    
-    const bass = audioCtx.createOscillator();
-    bass.type = 'sawtooth';
-    bass.frequency.value = 55; // Low A
-    bass.connect(masterGain);
-    bass.start();
+    startLiveSet();
 }
 
-function triggerWhoosh() {
-    if(!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.5);
-    g.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
-    osc.connect(g).connect(masterGain);
-    osc.start(); osc.stop(audioCtx.currentTime + 1);
+async function loadSample(url) {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    return await audioCtx.decodeAudioData(arrayBuffer);
 }
 
-// 4. ANIMATION LOOP
-let progress = 0;
+function playLoop(buffer, rate = 1.0, vol = 0.5) {
+    const source = audioCtx.createBufferSource();
+    const gain = audioCtx.createGain();
+    source.buffer = buffer;
+    source.loop = true;
+    source.playbackRate.value = rate;
+    gain.gain.value = vol;
+    source.connect(gain).connect(masterGain);
+    source.start();
+}
+
+function triggerScratch() {
+    if (!scratchBuffer) return;
+    const source = audioCtx.createBufferSource();
+    const gain = audioCtx.createGain();
+    source.buffer = scratchBuffer;
+    // Turntablism Physics: Random pitch shifting for "scratches"
+    source.playbackRate.value = 0.5 + Math.random() * 2; 
+    gain.gain.value = 0.2;
+    source.connect(gain).connect(masterGain);
+    source.start();
+    
+    // Visual "Jolt"
+    scratchIntensity = 2.0;
+    gsap.to(camera.rotation, { z: camera.rotation.z + 0.2, duration: 0.1, yoyo: true, repeat: 1 });
+}
+
+function startLiveSet() {
+    playLoop(kickBuffer, 0.8, 0.6); // The driving "Bass Thrum"
+    
+    // Scheduled Turntable FX
+    setInterval(() => {
+        if(Math.random() > 0.7) triggerScratch();
+    }, 1100); // Synced to 110 BPM approx
+}
+
+// 4. THE ANIMATION LOOP
+const vuBars = document.querySelectorAll('.vu-bar');
+const dataArray = new Uint8Array(32);
+
 function animate() {
     requestAnimationFrame(animate);
     
-    progress += 0.00005; // Cinematic Speed
-    if(progress > 1) progress = 0;
+    if (isPlaying) {
+        analyzer.getByteFrequencyData(dataArray);
+        
+        // Update VU Meter
+        vuBars.forEach((bar, i) => {
+            const h = (dataArray[i] / 255) * 80;
+            bar.style.height = `${h}px`;
+            if (h > 65) bar.classList.add('peak');
+            else bar.classList.remove('peak');
+        });
 
-    const pos = curve.getPointAt(progress);
-    const lookAt = curve.getPointAt((progress + 0.01) % 1);
-    camera.position.copy(pos);
-    camera.lookAt(lookAt);
+        // Movement Logic
+        progress += 0.00004 + (dataArray[2] * 0.0000005);
+        if (progress > 1) progress = 0;
 
-    // Pulse tunnel to 110 BPM (approx every 0.54s)
-    const pulse = Math.sin(Date.now() * 0.0115); 
-    tubeMat.opacity = 0.1 + (pulse * 0.05);
+        const pos = curve.getPointAt(progress);
+        const lookAt = curve.getPointAt((progress + 0.01) % 1);
+        camera.position.copy(pos);
+        camera.lookAt(lookAt);
 
+        // Scratch Jitter
+        if(scratchIntensity > 0) {
+            camera.position.x += Math.sin(Date.now()) * scratchIntensity;
+            scratchIntensity *= 0.9;
+        }
+
+        // Pulse light to kick drum
+        light.intensity = 50 + dataArray[0];
+        light.position.copy(pos);
+    }
+    
     renderer.render(scene, camera);
 }
 
-document.getElementById('init-btn').addEventListener('click', () => {
-    initAudio();
-    gsap.to("#boot-screen", { opacity: 0, duration: 2, onComplete: () => {
+// START BUTTON
+const initBtn = document.getElementById('init-btn');
+// Simulate loading
+setTimeout(() => {
+    document.getElementById('loader-progress').style.width = "100%";
+    initBtn.style.opacity = "1";
+    initBtn.classList.add('ready');
+}, 2000);
+
+initBtn.addEventListener('click', () => {
+    setupAudio();
+    isPlaying = true;
+    gsap.to("#boot-screen", { opacity: 0, duration: 1.5, onComplete: () => {
         document.getElementById('boot-screen').style.display = 'none';
+        document.getElementById('hud').style.opacity = '1';
         animate();
     }});
-    // Simulate passing names & trigger audio
+
+    // Cycle Member Names
     setInterval(() => {
-        triggerWhoosh();
-        const randomMember = members[Math.floor(Math.random() * members.length)];
-        document.getElementById('member-focus').innerText = randomMember;
-    }, 4000); 
+        const name = members[Math.floor(Math.random() * members.length)];
+        document.getElementById('active-member').innerText = name;
+    }, 5000);
 });
